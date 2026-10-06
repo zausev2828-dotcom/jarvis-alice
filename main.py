@@ -4,7 +4,7 @@ import requests
 
 app = FastAPI()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
 @app.post("/")
@@ -18,26 +18,34 @@ async def alice(request: Request):
 
     try:
         response = requests.post(
-            "https://api.openai.com/v1/responses",
+            "https://api.groq.com/openai/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Authorization": f"Bearer {GROQ_API_KEY}",
                 "Content-Type": "application/json",
             },
             json={
-                "model": "gpt-5.6-sol",
-                "instructions": (
-                    "Ты Джарвис — персональный голосовой помощник. "
-                    "Отвечай только на русском языке. "
-                    "Говори кратко, спокойно, уверенно и интеллигентно. "
-                    "Стиль — футуристический персональный помощник."
-                ),
-                "input": user_text,
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Ты Джарвис — персональный голосовой помощник. "
+                            "Отвечай только на русском языке. "
+                            "Говори кратко, спокойно, уверенно и интеллигентно. "
+                            "Стиль — футуристический персональный помощник."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": user_text,
+                    },
+                ],
             },
-            timeout=4,
+            timeout=8,
         )
 
         if response.status_code != 200:
-            print("OPENAI ERROR:", response.status_code, response.text)
+            print("GROQ ERROR:", response.status_code, response.text)
 
             return {
                 "version": "1.0",
@@ -49,7 +57,7 @@ async def alice(request: Request):
             }
 
         result = response.json()
-        answer = result.get("output_text", "Не удалось получить ответ.")
+        answer = result["choices"][0]["message"]["content"]
 
         return {
             "version": "1.0",
